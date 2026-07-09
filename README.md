@@ -39,5 +39,13 @@ flex food.l
 # Compile
 gcc food.tab.c lex.yy.c -o food -lfl
 
+
+**## Team**
+Sadia Asif (FA23/BSCS/357)
+Komal Yousaf (FA23/BSCS/334)
+Mahmoona Khan (FA23/BSCS/336)
+Sumamah (FA23/BSCS/686)
+Supervisor: Azib Mehmood | Lahore Garrison University
+
 # Run
 ./food
