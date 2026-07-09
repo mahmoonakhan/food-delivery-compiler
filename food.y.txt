@@ -1,0 +1,293 @@
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Parser internal declarations */
+void yyerror(const char *s);
+int yylex(void);
+
+/* Menu Item Structure */
+typedef struct {
+    char name[30];
+    int price;
+} MenuItem;
+
+/* Cart Item Structure */
+typedef struct {
+    char name[30];
+    int qty;
+    int price;
+} CartItem;
+
+/* Global Data Realizations */
+MenuItem menu[] = {
+    {"pizza", 500},
+    {"burger", 250},
+    {"fries", 120},
+    {"soda", 80}
+};
+int menu_size = 4;
+
+CartItem cart[50];
+int cart_count = 0;
+int applied_discount = 0;
+
+/* Helper Database Functions */
+int get_price(char *item) {
+    for (int i = 0; i < menu_size; i++) {
+        if (strcmp(menu[i].name, item) == 0) {
+            return menu[i].price;
+        }
+    }
+    return -1; // Item not found
+}
+
+/* =========================================
+   PHASE 4: PARSE TREE GENERATION (Visual)
+========================================= */
+void print_tree(char *rule, char *detail) {
+    printf("\n[PARSE TREE]\n");
+    printf("  statement\n");
+    printf("  └── %s\n", rule);
+    if (strlen(detail) > 0) {
+        printf("      └── %s\n", detail);
+    }
+    printf("\n");
+}
+
+/* =========================================
+   PHASE 3: SEMANTIC ANALYSIS
+========================================= */
+int semantic_check(char *item, int qty) {
+    if (get_price(item) == -1) {
+        printf("[SEMANTIC ERROR] Item '%s' does not exist in the menu.\n", item);
+        return 0;
+    }
+    if (qty <= 0) {
+        printf("[SEMANTIC ERROR] Quantity must be greater than zero.\n");
+        return 0;
+    }
+    return 1;
+}
+
+/* =========================================
+   PHASE 5: INTERMEDIATE CODE GENERATION
+========================================= */
+void generate_icg(char *operation, char *item, int qty) {
+    printf("[ICG] ");
+    if (strcmp(operation, "ORDER") == 0)
+        printf("ADD_TO_CART %s %d\n", item, qty);
+    else if (strcmp(operation, "REMOVE") == 0)
+        printf("REMOVE_FROM_CART %s\n", item);
+    else if (strcmp(operation, "TOTAL") == 0)
+        printf("COMPUTE_TOTAL\n");
+    else if (strcmp(operation, "PLACE_ORDER") == 0)
+        printf("CONFIRM_ORDER\n");
+    else if (strcmp(operation, "DISCOUNT") == 0)
+        printf("APPLY_VAL_MOD %d\n", qty);
+}
+
+/* =========================================
+   PHASE 6: CODE OPTIMIZATION
+========================================= */
+void optimize_code(char *operation) {
+    printf("[OPTIMIZER] ");
+    if (strcmp(operation, "ORDER") == 0)
+        printf("Optimized repeated memory allocations for cart items.\n");
+    else if (strcmp(operation, "TOTAL") == 0)
+        printf("Inlined global constant arithmetic operations.\n");
+    else
+        printf("Dead-code elimination checked. No optimization needed.\n");
+}
+
+/* =========================================
+   PHASE 7: TARGET CODE GENERATION
+========================================= */
+void generate_target_code(char *operation, char *item, int qty) {
+    printf("[TARGET CODE] ");
+    if (strcmp(operation, "ORDER") == 0)
+        printf("MOV R1, #%d; STR R1, [%s_PTR]\n", qty, item);
+    else if (strcmp(operation, "REMOVE") == 0)
+        printf("CLR [%s_PTR]; SUB CSR, 1\n", item);
+    else if (strcmp(operation, "TOTAL") == 0)
+        printf("ADD ACC, BILL; TRAP 0x02\n");
+    else if (strcmp(operation, "PLACE_ORDER") == 0)
+        printf("SYS_CALL 0x05; HALT\n");
+    else if (strcmp(operation, "DISCOUNT") == 0)
+        printf("SUB BILL, R1\n");
+}
+
+/* Backend execution triggers mimicking runtime execution */
+void cmd_menu() {
+    print_tree("menu_stmt", "SHOW MENU");
+    printf("--- MENU ---\n");
+    for(int i=0; i<menu_size; i++) {
+        printf("%s: %d PKR\n", menu[i].name, menu[i].price);
+    }
+    printf("------------\n");
+}
+
+void cmd_order(char *item, int qty) {
+    char detail[100];
+    sprintf(detail, "ITEM: %s | QTY: %d", item, qty);
+    print_tree("order_stmt", detail);
+
+    /* Phase 3 Validation */
+    if (!semantic_check(item, qty)) return;
+
+    /* Phase 5, 6, 7 Interventions */
+    generate_icg("ORDER", item, qty);
+    optimize_code("ORDER");
+    generate_target_code("ORDER", item, qty);
+
+    /* Execution Engine Logic */
+    int item_price = get_price(item);
+    strcpy(cart[cart_count].name, item);
+    cart[cart_count].qty = qty;
+    cart[cart_count].price = item_price;
+    cart_count++;
+    
+    printf("[RUNTIME OK] Added %dx %s to your cart.\n", qty, item);
+}
+
+void cmd_remove(char *item) {
+    char detail[100];
+    sprintf(detail, "REMOVE ITEM: %s", item);
+    print_tree("remove_stmt", detail);
+
+    generate_icg("REMOVE", item, 0);
+    optimize_code("REMOVE");
+    generate_target_code("REMOVE", item, 0);
+
+    int found = -1;
+    for (int i = 0; i < cart_count; i++) {
+        if (strcmp(cart[i].name, item) == 0) {
+            found = i;
+            break;
+        }
+    }
+
+    if (found != -1) {
+        for (int i = found; i < cart_count - 1; i++) {
+            cart[i] = cart[i + 1];
+        }
+        cart_count--;
+        printf("[RUNTIME OK] Removed '%s' from cart.\n", item);
+    } else {
+        printf("[RUNTIME ERROR] Item '%s' not found in your cart.\n", item);
+    }
+}
+
+void cmd_show_cart() {
+    print_tree("show_cart_stmt", "SHOW CURRENT CART");
+    printf("--- YOUR CART ---\n");
+    if (cart_count == 0) {
+        printf("Cart is empty.\n");
+    } else {
+        for (int i = 0; i < cart_count; i++) {
+            printf("%dx %s - %d PKR each\n", cart[i].qty, cart[i].name, cart[i].price);
+        }
+    }
+    printf("-----------------\n");
+}
+
+void cmd_total() {
+    print_tree("total_stmt", "TOTAL");
+
+    generate_icg("TOTAL", "", 0);
+    optimize_code("TOTAL");
+    generate_target_code("TOTAL", "", 0);
+
+    int total = 0;
+    for (int i = 0; i < cart_count; i++) {
+        total += (cart[i].qty * cart[i].price);
+    }
+    if (applied_discount > 0) {
+        total -= (total * applied_discount) / 100;
+    }
+    printf("[RUNTIME OK] Total Bill (After explicit discounts): %d PKR\n", total);
+}
+
+void cmd_discount(int amount) {
+    char detail[50];
+    sprintf(detail, "DISCOUNT VALUE: %d%%", amount);
+    print_tree("discount_stmt", detail);
+
+    if (amount <= 0 || amount > 100) {
+        printf("[SEMANTIC ERROR] Invalid discount value. Must be 1-100%%.\n");
+        return;
+    }
+
+    generate_icg("DISCOUNT", "", amount);
+    optimize_code("DISCOUNT");
+    generate_target_code("DISCOUNT", "", amount);
+
+    applied_discount = amount;
+    printf("[RUNTIME OK] %d%% discount applied to your final bill pipeline.\n", amount);
+}
+
+void cmd_place_order() {
+    print_tree("place_stmt", "PLACE_ORDER");
+
+    generate_icg("PLACE_ORDER", "", 0);
+    optimize_code("PLACE_ORDER");
+    generate_target_code("PLACE_ORDER", "", 0);
+
+    if(cart_count == 0) {
+        printf("[RUNTIME ERROR] Cannot place order. Your cart is completely empty.\n");
+        return;
+    }
+    printf("[RUNTIME OK] Order sent successfully to kitchen processing unit.\n");
+    cart_count = 0; 
+}
+%}
+
+/* Define tokens using types from explicit token definitions */
+%union {
+    int num;
+    char *str;
+}
+
+%token MENU ORDER REMOVE SHOW_CART TOTAL DISCOUNT PLACE_ORDER EXIT NEWLINE
+%token <num> NUMBER
+%token <str> ID
+
+%%
+
+/* Context-Free Grammar Production Rules (Phase 2: Syntax Analysis) */
+program:
+    | program line
+;
+
+line:
+    NEWLINE
+    | command NEWLINE
+;
+
+command:
+    MENU                                { cmd_menu(); }
+    | ORDER ID NUMBER                   { cmd_order($2, $3); free($2); }
+    | ORDER ID                          { cmd_order($2, 1); free($2); } /* Default quantity sequence rule */
+    | REMOVE ID                         { cmd_remove($2); free($2); }
+    | SHOW_CART                         { cmd_show_cart(); }
+    | TOTAL                             { cmd_total(); }
+    | DISCOUNT NUMBER                   { cmd_discount($2); }
+    | PLACE_ORDER                       { cmd_place_order(); }
+    | EXIT                              { printf("Terminating Compiler Shell Environment. Goodbye.\n"); exit(0); }
+;
+
+%%
+
+void yyerror(const char *s) {
+    fprintf(stderr, "[SYNTAX ERROR] Ambiguous input matching template: %s\n", s);
+}
+
+int main(void) {
+    printf("=================================================================\n");
+    printf("   WELCOME TO THE 7-PHASE INDUSTRIAL CATERING COMPILER PIPELINE  \n");
+    printf("=================================================================\n");
+    printf("Enter instructions (e.g., MENU, ORDER pizza 2, TOTAL, EXIT):\n\n");
+    yyparse();
+    return 0;
+}

@@ -1,0 +1,28 @@
+%{
+#include "food.tab.h"
+#include <string.h>
+#include <stdlib.h>
+%}
+
+%option noyywrap
+
+%%
+
+[ \t]+                  { /* Ignore whitespace */ }
+\n                      { return NEWLINE; }
+
+"MENU"                  { return MENU; }
+"ORDER"                 { return ORDER; }
+"REMOVE"                { return REMOVE; }
+"SHOW_CART"             { return SHOW_CART; }
+"TOTAL"                 { return TOTAL; }
+"DISCOUNT"              { return DISCOUNT; }
+"PLACE_ORDER"           { return PLACE_ORDER; }
+"EXIT"                  { return EXIT; }
+
+[0-9]+                  { yylval.num = atoi(yytext); return NUMBER; }
+[a-zA-Z_][a-zA-Z0-9_]*  { yylval.str = strdup(yytext); return ID; }
+
+.                       { printf("[LEXICAL ERROR] Unknown character: %s\n", yytext); }
+
+%%
