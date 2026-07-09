@@ -39,6 +39,10 @@ flex food.l
 # Compile
 gcc food.tab.c lex.yy.c -o food -lfl
 
+# Run
+./food
+
+
 
 **## Team**
 Sadia Asif (FA23/BSCS/357)
@@ -47,5 +51,4 @@ Mahmoona Khan (FA23/BSCS/336)
 Sumamah (FA23/BSCS/686)
 Supervisor: Azib Mehmood | Lahore Garrison University
 
-# Run
-./food
+
